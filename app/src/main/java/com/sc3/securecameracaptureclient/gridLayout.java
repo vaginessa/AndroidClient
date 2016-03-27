@@ -4,6 +4,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,9 @@ public class gridLayout extends AppCompatActivity {
 
         initializeData();
         initializeAdapter();
+        JSONObject jo = new JSONParser("").jO;
+
+        Log.d("JSON", jo.toString());
     }
 
     private void initializeData(){

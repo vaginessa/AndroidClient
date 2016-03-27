@@ -1,5 +1,8 @@
 package com.sc3.securecameracaptureclient;
 
+import android.util.Log;
+
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -10,13 +13,17 @@ public class JSONParser {
 
     public JSONParser(String JSONfile) {
 
-        String testString = JSONfile;
-        String jsonString = testString.replaceAll("\\s+", "");
+        JSONfile = "{\"2016\":\n" +
+                "{\"February\":\n" +
+                "{\"25\":\n" +
+                "{\"09\":\n" +
+                "[{\"filename\":\"b.jpg\",\"datetaken\":\"201602250944\",\"bold\":\"1\"}],\"08\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201602250844\",\"bold\":\"1\"}]},\"26\":{\"09\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201602260944\",\"bold\":\"1\"}]}},\"March\":{\"25\":{\"09\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201603250944\",\"bold\":\"1\"}]}}}}";
+        String jsonString = JSONfile.replaceAll("\\s+", "");
 
         //New JsonObject
         jO = new JSONObject();
 
-        int stringLeftToIndex = testString.length();
+        int stringLeftToIndex = JSONfile.length();
         int currentPosInString = 0;
 
         //Pull off the first characters
@@ -50,7 +57,9 @@ public class JSONParser {
                 String month = "";
                 String monthBlock = jsonString.substring(currentPosInString, currentPosInString+10);
                 //month = Regex.Match(monthBlock, "\"([^\\)]+)\"").ToString();
-                month = Pattern.compile("\"([^\\)]+)\"").split(monthBlock)[0];
+                String[] r = Pattern.compile("\"([^\\)]+)\"").split(monthBlock);
+                if(r.length != 0) { month = r[0]; }
+                else { month = monthBlock; }
                 System.out.println(month);
                 month = month.replaceAll("\"", "");
                 month = month.replaceAll(":", "");
@@ -73,8 +82,13 @@ public class JSONParser {
                     stringLeftToIndex--;
                     String day = "";
                     String dayBlock = jsonString.substring(currentPosInString, currentPosInString+4);
-                    day = Pattern.compile("\"([^\\)]+)\"").split(dayBlock)[0];
+
+                    r = Pattern.compile("\"([^\\)]+)\"").split(dayBlock);
+                    if(r.length != 0) { day = r[0]; }
+                    else { day = dayBlock; }
+
                     day = day.replaceAll("\"", "");
+
                     //Update counters
                     currentPosInString += day.length() + 2;
                     stringLeftToIndex -= day.length() + 2;
@@ -90,12 +104,17 @@ public class JSONParser {
 
                     while (stringLeftToIndex > 0) {
                         String hour = "";
+                        if(jsonString.charAt(currentPosInString)==',') { currentPosInString++; }
                         String hourBlock = jsonString.substring(currentPosInString, currentPosInString+4);
-                        hour = Pattern.compile("\"([^\\)]+)\"").split(hourBlock)[0];
+                        r = Pattern.compile("\"([^\\)]+)\"").split(hourBlock);
+                        if(r.length != 0) { hour = r[0]; }
+                        else { hour = hourBlock; }
                         if (hour == "") {
                             currentPosInString++;
                             hourBlock = jsonString.substring(currentPosInString, currentPosInString+4);
-                            hour = Pattern.compile("\"([^\\)]+)\"").split(hourBlock)[0];
+                            r = Pattern.compile("\"([^\\)]+)\"").split(hourBlock);
+                            if(r.length != 0) { hour = r[0]; }
+                            else { hour = hourBlock; }
                         }
                         hour = hour.replaceAll("\"", "");
 
@@ -118,14 +137,17 @@ public class JSONParser {
                             }
                         }
 
-                        hourBlock = jsonString.substring(currentPosInString, hourBlockEnd);
+                        //if(jsonString.charAt(currentPosInString)=='[') { currentPosInString++; hourBlockEnd--; }
+
+                        hourBlock = jsonString.substring(currentPosInString, currentPosInString+hourBlockEnd);
 
                         //Update indexes
                         currentPosInString += hourBlockEnd;
                         stringLeftToIndex -= hourBlockEnd;
 
                         //Get the objects in the hour block
-                        String[] imageMatches = Pattern.compile("\\{([^\\}]+?)\\}").split(hourBlock);
+                        //Pattern image_pattern = Pattern.compile("\\}([^\\}]+?)\\}");
+                        String[] imageMatches = Pattern.compile("\\}([^\\}]+?)\\}").split(hourBlock);
 
                         //Get first match
                         String minute = "";
@@ -133,14 +155,29 @@ public class JSONParser {
                         String file_name = "";
                         String method = "";
 
-                        for(String match1 : imageMatches)
+                        Pattern file_pattern = Pattern.compile("\"filename\"[ :]+(\"[^\"]*\")");
+                        Pattern date_pattern = Pattern.compile("\"datetaken\"[ :]+(\"[^\"]*\")");
+                        Pattern method_pattern = Pattern.compile("\"bold\"[ :]+(\"[^\"]*\")");
+
+                        for(String m : imageMatches)
                         {
                             try {
-                                String match = match1;
+                                Matcher fm = file_pattern.matcher(m);
+                                if(fm.find()) {
+                                    file_name = fm.group(1);
+                                }
 
-                                file_name = Pattern.compile("\"filename\"[ :]+(\"[^\"]*\")").split(match)[0].substring(0,12);
-                                date_taken = Pattern.compile("\"datetaken\"[ :]+(\"[^\"]*\")").split(match)[0].substring(0,13);
-                                method = Pattern.compile("\"bold\"[ :]+(\"[^\"]*\")").split(match)[0].substring(0,8);
+                                Matcher dm = date_pattern.matcher(m);
+                                if(dm.find()) {
+                                    date_taken = dm.group(1);
+                                }
+
+                                Matcher mm = method_pattern.matcher(m);
+                                if(mm.find()) {
+                                    method = mm.group(1);
+                                }
+
+                                //Log.d("JSON", file_name + "  " + date_taken + "  " + method);
 
                                 file_name = file_name.replaceAll("\"", "");
                                 date_taken = date_taken.replaceAll("\"", "");
