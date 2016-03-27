@@ -17,7 +17,7 @@ public class JSONParser {
                 "{\"February\":\n" +
                 "{\"25\":\n" +
                 "{\"09\":\n" +
-                "[{\"filename\":\"b.jpg\",\"datetaken\":\"201602250944\",\"bold\":\"1\"}],\"08\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201602250844\",\"bold\":\"1\"}]},\"26\":{\"09\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201602260944\",\"bold\":\"1\"}]}},\"March\":{\"25\":{\"09\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201603250944\",\"bold\":\"1\"}]}}}}";
+                "[{\"filename\":\"b.jpg\",\"datetaken\":\"201602250944\",\"bold\":\"1\"},{\"filename\":\"c.jpg\",\"datetaken\":\"201602250944\",\"bold\":\"1\"},{\"filename\":\"d.jpg\",\"datetaken\":\"201602250944\",\"bold\":\"1\"}],\"08\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201602250844\",\"bold\":\"1\"}]},\"26\":{\"09\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201602260944\",\"bold\":\"1\"}]}},\"March\":{\"25\":{\"09\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201603250944\",\"bold\":\"1\"}]}}}}";
         String jsonString = JSONfile.replaceAll("\\s+", "");
 
         //New JsonObject
@@ -60,7 +60,6 @@ public class JSONParser {
                 String[] r = Pattern.compile("\"([^\\)]+)\"").split(monthBlock);
                 if(r.length != 0) { month = r[0]; }
                 else { month = monthBlock; }
-                System.out.println(month);
                 month = month.replaceAll("\"", "");
                 month = month.replaceAll(":", "");
                 month = month.replaceAll("\\{", "");
@@ -137,8 +136,6 @@ public class JSONParser {
                             }
                         }
 
-                        //if(jsonString.charAt(currentPosInString)=='[') { currentPosInString++; hourBlockEnd--; }
-
                         hourBlock = jsonString.substring(currentPosInString, currentPosInString+hourBlockEnd);
 
                         //Update indexes
@@ -146,8 +143,7 @@ public class JSONParser {
                         stringLeftToIndex -= hourBlockEnd;
 
                         //Get the objects in the hour block
-                        //Pattern image_pattern = Pattern.compile("\\}([^\\}]+?)\\}");
-                        String[] imageMatches = Pattern.compile("\\}([^\\}]+?)\\}").split(hourBlock);
+                        String[] imageMatches = hourBlock.split("\\{");
 
                         //Get first match
                         String minute = "";
