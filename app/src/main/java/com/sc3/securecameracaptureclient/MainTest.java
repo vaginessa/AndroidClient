@@ -1,5 +1,6 @@
 package com.sc3.securecameracaptureclient;
 
+import android.app.Activity;
 import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
