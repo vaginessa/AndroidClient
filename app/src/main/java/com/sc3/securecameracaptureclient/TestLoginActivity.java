@@ -3,13 +3,20 @@ package com.sc3.securecameracaptureclient;
 /**
  * Created by Nathan on 3/28/2016.
  */
+import android.app.Activity;
+import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
 import android.content.Intent;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -38,12 +45,14 @@ import cz.msebera.android.httpclient.message.BasicNameValuePair;
 public class TestLoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
     private static final int REQUEST_SIGNUP = 0;
-    public String GLOBALIPADDRESS = "139.71.78.159";
+    public String GLOBALIPADDRESS = "";
+    public boolean ipaddressSettingExits = false;
 
     @InjectView(R.id.input_email) EditText _emailText;
     @InjectView(R.id.input_password) EditText _passwordText;
     @InjectView(R.id.btn_login) Button _loginButton;
     @InjectView(R.id.link_signup) TextView _signupLink;
+    @InjectView(R.id.link_ip_address) TextView _ipAddressLink;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -51,11 +60,68 @@ public class TestLoginActivity extends AppCompatActivity {
         setContentView(R.layout.test_login_activity);
         ButterKnife.inject(this);
 
+        final SharedPreferences settings = getSharedPreferences("MySettingsFile", 0);
+        String IPAddress = settings.getString("ipaddress", "");
+        ipaddressSettingExits = !IPAddress.equals("");
+        GLOBALIPADDRESS = IPAddress;
+
+        final Context c = this;
+
         _loginButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
-                login();
+                if(ipaddressSettingExits)
+                    login();
+                else {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(c);
+                    builder.setMessage("IP Address of Server not Set.")
+                            .setPositiveButton("Set Now", new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(c);
+                                    // Get the layout inflater
+                                    LayoutInflater inflater = (LayoutInflater) c.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+                                    // Inflate and set the layout for the dialog
+                                    // Pass null as the parent view because its going in the dialog layout
+                                    final View v_iew = inflater.inflate(R.layout.ip_address, null);
+                                    builder.setView(v_iew)
+                                            //.setTitle("IP Address Of the Server")
+                                            // Add action buttons
+                                            .setPositiveButton(R.string.set, new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int id) {
+                                                    //Save the ip Address
+                                                    EditText _ipaddress = (EditText) v_iew.findViewById(R.id.ipaddress_editText);
+
+                                                    SharedPreferences.Editor e = settings.edit();
+                                                    //Probably should valdate these settings first
+                                                    //TODO validate
+                                                    if(_ipaddress.getText() != null && !_ipaddress.getText().toString().equals("")) {
+                                                        e.putString("ipaddress", _ipaddress.getText().toString());
+                                                        e.apply();
+                                                        ipaddressSettingExits = true;
+                                                    } else {
+                                                        _ipaddress.setError("Please enter valid IP Address");
+                                                    }
+                                                }
+                                            })
+                                            .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                                                public void onClick(DialogInterface dialog, int id) {
+                                                    dialog.cancel();
+                                                }
+                                            });
+                                    dialog.cancel();
+                                    builder.show();
+                                }
+                            })
+                            .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int id) {
+                                    // User cancelled the dialog
+                                }
+                            });
+                    builder.show();
+                }
             }
         });
 
@@ -66,6 +132,45 @@ public class TestLoginActivity extends AppCompatActivity {
                 // Start the Signup activity
                 Intent intent = new Intent(getApplicationContext(), TestSignupActivity.class);
                 startActivityForResult(intent, REQUEST_SIGNUP);
+            }
+        });
+
+        _ipAddressLink.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(c);
+                // Get the layout inflater
+                LayoutInflater inflater = (LayoutInflater) c.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+                // Inflate and set the layout for the dialog
+                // Pass null as the parent view because its going in the dialog layout
+                final View v_iew = inflater.inflate(R.layout.ip_address, null);
+                builder.setView(v_iew)
+                        //.setTitle("IP Address Of the Server")
+                        // Add action buttons
+                        .setPositiveButton(R.string.set, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int id) {
+                                //Save the ip Address
+                                EditText _ipaddress = (EditText) v_iew.findViewById(R.id.ipaddress_editText);
+                                SharedPreferences.Editor e = settings.edit();
+                                //Probably should valdate these settings first
+                                //TODO validate
+                                if(_ipaddress.getText() != null && !_ipaddress.getText().toString().equals("")) {
+                                    e.putString("ipaddress", _ipaddress.getText().toString());
+                                    e.apply();
+                                    ipaddressSettingExits = true;
+                                } else {
+                                    _ipaddress.setError("Please enter valid IP Address");
+                                }
+                            }
+                        })
+                        .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                dialog.cancel();
+                            }
+                        });
+                builder.show();
             }
         });
     }
@@ -126,8 +231,10 @@ public class TestLoginActivity extends AppCompatActivity {
 
     public void onLoginSuccess() {
         _loginButton.setEnabled(true);
-        Intent gridLayout = new Intent(getBaseContext(), gridLayout.class);
-        startActivity(gridLayout);
+        JSONObject jo = new JSONParser("").jO;
+        Intent yearIntent = new Intent(getBaseContext(), YearViewActivity.class);
+        yearIntent.putParcelableArrayListExtra("JSONTREE", jo.year);
+        startActivity(yearIntent);
         finish();
     }
 
@@ -172,14 +279,13 @@ public class TestLoginActivity extends AppCompatActivity {
         @Override
         protected Boolean doInBackground(Void... params) {
             // TODO: attempt authentication against a network service.
-
             try {
-                // Simulate network access.
                 // Create a new HttpClient and Post Header
 
                 // Create an HostnameVerifier that hardwires the expected hostname.
                 // Note that is different than the URL's hostname:
                 // example.com versus example.org
+                //TODO Fix the hostname Verifier
                 HostnameVerifier hostnameVerifier = new HostnameVerifier() {
                     @Override
                     public boolean verify(String hostname, SSLSession session) {

@@ -15,7 +15,8 @@
         android:theme="@style/AppTheme">
         <activity
             android:name=".TestLoginActivity"
-            android:label="@string/app_name" >
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoABar" >
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,9 +24,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".YearViewActivity" />
+        <activity android:name=".MonthViewActivity" />
+        <activity android:name=".DayViewActivity" />
+        <activity android:name=".HourViewActivity" />
         <activity android:name=".gridLayout" />
         <activity android:name=".MainTest" />
-        <activity android:name=".TestSignupActivity" />
+        <activity android:name=".TestSignupActivity" android:theme="@style/AppTheme.NoABar" />
         <!-- <activity android:name=".TestLoginActivity" /> -->
     </application>
 

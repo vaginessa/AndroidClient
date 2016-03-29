@@ -12,12 +12,17 @@ import java.util.List;
 
 public class gridLayout extends AppCompatActivity {
 
-    private List<Card> cards;
+    private List<imageHolder> cards;
     private RecyclerView rv;
+    ArrayList<Image> ImageArrayList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        this.setTitle("Images");
+
+        ImageArrayList = this.getIntent().getParcelableArrayListExtra("JSONTREE");
 
         setContentView(R.layout.recycler_view);
 
@@ -29,16 +34,19 @@ public class gridLayout extends AppCompatActivity {
 
         initializeData();
         initializeAdapter();
-        JSONObject jo = new JSONParser("").jO;
 
-        Log.d("JSON", jo.toString());
     }
 
     private void initializeData(){
         cards = new ArrayList<>();
-        cards.add(new Card("", "", R.drawable.nature1));
-        cards.add(new Card("", "", R.drawable.nature1));
-        cards.add(new Card("", "", R.drawable.nature3));
+
+        for(int i = 0; i < ImageArrayList.size(); i ++) {
+            cards.add(new imageHolder(ImageArrayList.get(i).date_taken + "", ImageArrayList.get(i).file_name + "", R.drawable.nature1));
+        }
+
+        //cards.add(new imageHolder("", "", R.drawable.nature1));
+        //cards.add(new imageHolder("", "", R.drawable.nature1));
+        //cards.add(new imageHolder("", "", R.drawable.nature3));
     }
 
     private void initializeAdapter(){

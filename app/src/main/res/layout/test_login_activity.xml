@@ -54,10 +54,18 @@
             android:text="Login"/>
 
         <TextView android:id="@+id/link_signup"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="No account yet? Create one"
+        android:gravity="center"
+        android:textSize="16dip"/>
+
+        <TextView android:id="@+id/link_ip_address"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            android:text="No account yet? Create one"
+            android:text="Set IP Address of Server"
             android:gravity="center"
             android:textSize="16dip"/>
 

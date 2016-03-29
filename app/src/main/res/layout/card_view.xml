@@ -35,14 +35,16 @@
                 android:layout_height="wrap_content"
                 android:text="11:29 AM"
                 android:textColor="@color/grey_700"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                android:id="@+id/image_card_title"/>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="March 24th, 2016"
                 android:textColor="@color/grey_500"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:id="@+id/image_card_subTitle" />
 
         </LinearLayout>
 

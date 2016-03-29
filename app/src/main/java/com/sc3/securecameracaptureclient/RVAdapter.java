@@ -27,11 +27,15 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
 
         CardView cv;
         ImageView photo;
+        TextView title;
+        TextView subTitle;
 
         CardViewHolder(View itemView) {
             super(itemView);
             cv = (CardView) itemView.findViewById(R.id.cv);
             photo = (ImageView) itemView.findViewById(R.id.iv);
+            title = (TextView) itemView.findViewById(R.id.image_card_title);
+            subTitle = (TextView) itemView.findViewById(R.id.image_card_subTitle);
 
             assert cv != null;
             cv.setOnClickListener(new View.OnClickListener() {
@@ -43,11 +47,11 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
         }
     }
 
-    List<Card> cards;
+    List<imageHolder> cards;
     Context context;
     ArrayList<Integer> drawables = new ArrayList<>();
 
-    RVAdapter(List<Card> cards, Context context){
+    RVAdapter(List<imageHolder> cards, Context context){
         this.cards = cards;
         this.context = context;
         drawables.add(R.drawable.nature1);
@@ -76,6 +80,8 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
                 .load(drawables.get(i))
                 .resize(dp2px(220), 0)
                 .into(cardViewHolder.photo);
+        cardViewHolder.title.setText(cards.get(i).name);
+        cardViewHolder.subTitle.setText(cards.get(i).age);
     }
 
     public int dp2px(int dp) {
