@@ -1,6 +1,7 @@
 package com.sc3.securecameracaptureclient;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
@@ -30,7 +31,7 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
         TextView title;
         TextView subTitle;
 
-        CardViewHolder(View itemView) {
+        CardViewHolder(View itemView, final Context c) {
             super(itemView);
             cv = (CardView) itemView.findViewById(R.id.cv);
             photo = (ImageView) itemView.findViewById(R.id.iv);
@@ -41,7 +42,10 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
             cv.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Log.d("CLICKED", "CardView clicked");
+                    Intent yearIntent = new Intent(c, ImageViewActivity.class);
+                    yearIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    yearIntent.putExtra("picture", subTitle.getText().toString());
+                    c.startActivity(yearIntent);
                 }
             });
         }
@@ -67,7 +71,7 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
     @Override
     public CardViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
         View v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.card_view, viewGroup, false);
-        CardViewHolder pvh = new CardViewHolder(v);
+        CardViewHolder pvh = new CardViewHolder(v, context);
         return pvh;
     }
 

@@ -40,12 +40,25 @@ public class HourViewActivity extends AppCompatActivity {
     private void initializeData(){
         years = new ArrayList<>();
         for(int i = 0; i < hourArrayList.size(); i++) {
-            years.add(new Card(hourArrayList.get(i).hour + "", R.drawable.folder));
+            years.add(new Card(formatHour(hourArrayList.get(i).hour), R.drawable.folder));
         }
     }
 
     private void initializeAdapter(){
         HourAdapter adapter = new HourAdapter(years, hourArrayList, this);
         rv.setAdapter(adapter);
+    }
+
+    private String formatHour(int hour) {
+
+        if(hour<12) {
+            if(hour==0) {
+                hour=12;
+            }
+            return hour + ":00 am";
+        } else {
+            hour-=12;
+            return hour + ":00 pm";
+        }
     }
 }
