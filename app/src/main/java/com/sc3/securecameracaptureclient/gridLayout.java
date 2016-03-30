@@ -43,10 +43,6 @@ public class gridLayout extends AppCompatActivity {
         for(int i = 0; i < ImageArrayList.size(); i ++) {
             cards.add(new imageHolder(ImageArrayList.get(i).date_taken + "", ImageArrayList.get(i).file_name + "", R.drawable.nature1));
         }
-
-        //cards.add(new imageHolder("", "", R.drawable.nature1));
-        //cards.add(new imageHolder("", "", R.drawable.nature1));
-        //cards.add(new imageHolder("", "", R.drawable.nature3));
     }
 
     private void initializeAdapter(){

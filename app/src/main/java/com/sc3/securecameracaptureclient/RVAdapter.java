@@ -77,7 +77,7 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
         //cardViewHolder.personAge.setText(persons.get(i).age);
         assert cardViewHolder.photo != null;
         Picasso.with(cardViewHolder.photo.getContext())
-                .load(drawables.get(i))
+                .load(drawables.get(0))
                 .resize(dp2px(220), 0)
                 .into(cardViewHolder.photo);
         cardViewHolder.title.setText(cards.get(i).name);

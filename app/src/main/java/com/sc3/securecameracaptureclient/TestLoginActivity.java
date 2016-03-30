@@ -23,24 +23,37 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.cert.Certificate;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManagerFactory;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
+import cz.msebera.android.httpclient.HttpEntity;
+import cz.msebera.android.httpclient.HttpResponse;
 import cz.msebera.android.httpclient.NameValuePair;
-import cz.msebera.android.httpclient.message.BasicNameValuePair;
+import cz.msebera.android.httpclient.client.HttpClient;
+import cz.msebera.android.httpclient.client.methods.HttpPost;
 
 public class TestLoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
@@ -156,7 +169,7 @@ public class TestLoginActivity extends AppCompatActivity {
                                 SharedPreferences.Editor e = settings.edit();
                                 //Probably should valdate these settings first
                                 //TODO validate
-                                if(_ipaddress.getText() != null && !_ipaddress.getText().toString().equals("")) {
+                                if (_ipaddress.getText() != null && !_ipaddress.getText().toString().equals("")) {
                                     e.putString("ipaddress", _ipaddress.getText().toString());
                                     e.apply();
                                     ipaddressSettingExits = true;
@@ -194,20 +207,7 @@ public class TestLoginActivity extends AppCompatActivity {
         String email = _emailText.getText().toString();
         String password = _passwordText.getText().toString();
 
-        // TODO: Undo this to make it run
-        if(false)
-            (new UserLoginTask(email, password)).execute();
-
-        new android.os.Handler().postDelayed(
-                new Runnable() {
-                    public void run() {
-                        // On complete call either onLoginSuccess or onLoginFailed
-                        //new UserLoginTask(email, password).execute();
-                        onLoginSuccess();
-                        // onLoginFailed();
-                        progressDialog.dismiss();
-                    }
-                }, 3000);
+        new UserLoginTask(email, password, progressDialog).execute();
     }
 
 
@@ -229,9 +229,10 @@ public class TestLoginActivity extends AppCompatActivity {
         moveTaskToBack(true);
     }
 
-    public void onLoginSuccess() {
+    public void onLoginSuccess(String JSON) {
+        //progressDialog.dismiss();
         _loginButton.setEnabled(true);
-        JSONObject jo = new JSONParser("").jO;
+        JSONObject jo = new JSONParser(JSON).jO;
         Intent yearIntent = new Intent(getBaseContext(), YearViewActivity.class);
         yearIntent.putParcelableArrayListExtra("JSONTREE", jo.year);
         startActivity(yearIntent);
@@ -239,6 +240,7 @@ public class TestLoginActivity extends AppCompatActivity {
     }
 
     public void onLoginFailed() {
+        //progressDialog.dismiss();
         Toast.makeText(getBaseContext(), "Login failed", Toast.LENGTH_LONG).show();
         _loginButton.setEnabled(true);
     }
@@ -270,85 +272,126 @@ public class TestLoginActivity extends AppCompatActivity {
 
         private final String mEmail;
         private final String mPassword;
+        private final ProgressDialog mProgressDialog;
+        StringBuffer response;
 
-        UserLoginTask(String email, String password) {
+        UserLoginTask(String email, String password, ProgressDialog progressDialog) {
             mEmail = email;
             mPassword = password;
+            mProgressDialog = progressDialog;
         }
 
         @Override
         protected Boolean doInBackground(Void... params) {
             // TODO: attempt authentication against a network service.
+            response = new StringBuffer();
+
             try {
                 // Create a new HttpClient and Post Header
 
+                String URI = "https://" + GLOBALIPADDRESS + "/login.php";
+
                 // Create an HostnameVerifier that hardwires the expected hostname.
-                // Note that is different than the URL's hostname:
-                // example.com versus example.org
-                //TODO Fix the hostname Verifier
+
                 HostnameVerifier hostnameVerifier = new HostnameVerifier() {
                     @Override
                     public boolean verify(String hostname, SSLSession session) {
                         HostnameVerifier hv =
                                 HttpsURLConnection.getDefaultHostnameVerifier();
-                        return hv.verify("example.com", session);
+                        return true;//hv.verify(GLOBALIPADDRESS, session);
                     }
                 };
-                // Tell the URLConnection to use our HostnameVerifier
-                String URI = "http://" + GLOBALIPADDRESS + "/login.php";
-                if(false) {
-                    URL url = new URL(URI);
-                    HttpsURLConnection urlConnection =
-                            (HttpsURLConnection) url.openConnection();
-                    urlConnection.setHostnameVerifier(hostnameVerifier);
 
-                    urlConnection.setReadTimeout(10000);
-                    urlConnection.setConnectTimeout(15000);
-                    urlConnection.setRequestMethod("POST");
-                    urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-                    urlConnection.setDoInput(true);
-                    urlConnection.setDoOutput(true);
+                // Load CAs from an InputStream
+                // (could be from a resource or ByteArrayInputStream or ...)
+                CertificateFactory cf = CertificateFactory.getInstance("X.509");
+                // From https://www.washington.edu/itconnect/security/ca/load-der.crt
 
-                    List<NameValuePair> options = new ArrayList<>();
-                    options.add(new BasicNameValuePair("username", mEmail));
-                    options.add(new BasicNameValuePair("password", mPassword));
-
-                    OutputStream os = urlConnection.getOutputStream();
-                    BufferedWriter writer = new BufferedWriter(
-                            new OutputStreamWriter(os, "UTF-8"));
-                    writer.write(getQuery(options));
-                    writer.flush();
-                    writer.close();
-                    os.close();
-
-                    urlConnection.connect();
-
-                    InputStream in = urlConnection.getInputStream();
-                    byte[] inputBytes = new byte[in.available()];
-                    in.read(inputBytes);
-
-                    //Optional
-                    //publishProgress((int) ((i / (float) count) * 100));
-
-                    String str = new String(inputBytes, "UTF-8");
-
-                    System.out.println(str);
+                InputStream caInput = new BufferedInputStream(getBaseContext().getAssets().open("secure.crt"));
+                Certificate ca;
+                try {
+                    ca = cf.generateCertificate(caInput);
+                    System.out.println("ca=" + ((X509Certificate) ca).getSubjectDN());
+                } finally {
+                    caInput.close();
                 }
 
-            } catch (Exception e) { }
+                // Create a KeyStore containing our trusted CAs
+                String keyStoreType = KeyStore.getDefaultType();
+                KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+                keyStore.load(null, null);
+                keyStore.setCertificateEntry("ca", ca);
+
+                // Create a TrustManager that trusts the CAs in our KeyStore
+                String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
+                tmf.init(keyStore);
+
+                // Create an SSLContext that uses our TrustManager
+                SSLContext context = SSLContext.getInstance("TLS");
+                context.init(null, tmf.getTrustManagers(), null);
 
 
-            return true;
+                // Tell the URLConnection to use a SocketFactory from our SSLContext
+                URL url = new URL(URI);
+                HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+
+                urlConnection.setSSLSocketFactory(context.getSocketFactory());
+                urlConnection.setHostnameVerifier(hostnameVerifier);
+
+                urlConnection.setReadTimeout(10000);
+                urlConnection.setConnectTimeout(15000);
+                urlConnection.setRequestMethod("POST");
+                urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                urlConnection.setDoInput(true);
+                urlConnection.setDoOutput(true);
+
+                OutputStream os = urlConnection.getOutputStream();
+
+                String myParameters = "username=" + mEmail + "&password=" + mPassword;
+                os.write(myParameters.getBytes("UTF-8"));//getQuery(options));
+                os.flush();
+                os.close();
+
+                int responseCode = urlConnection.getResponseCode();
+                System.out.println("\nSending 'POST' request to URL : " + url);
+                System.out.println("Post parameters : " + myParameters);
+                System.out.println("Response Code : " + responseCode);
+
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(urlConnection.getInputStream()));
+                String inputLine;
+                //StringBuffer response = new StringBuffer();
+
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                System.out.println(response);
+
+                if (response.substring(0,1).equals("0")) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+
+            } catch (Exception e) {
+                System.out.println(e);
+                return false;
+            }
         }
 
         @Override
         protected void onPostExecute(final Boolean success) {
-
-            if (success) {
-                onLoginSuccess();
+            mProgressDialog.dismiss();
+            if( success ){
+                onLoginSuccess(response.substring(1));
             } else {
                 onLoginFailed();
             }
+
         }
 
         @Override

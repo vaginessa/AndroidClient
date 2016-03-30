@@ -13,12 +13,14 @@ public class JSONParser {
 
     public JSONParser(String JSONfile) {
 
-        JSONfile = "{\"2016\":\n" +
+        /*JSONfile = "{\"2016\":\n" +
                 "{\"February\":\n" +
                 "{\"25\":\n" +
                 "{\"09\":\n" +
                 "[{\"filename\":\"b.jpg\",\"datetaken\":\"201602250944\",\"bold\":\"1\"},{\"filename\":\"c.jpg\",\"datetaken\":\"201602250944\",\"bold\":\"1\"},{\"filename\":\"d.jpg\",\"datetaken\":\"201602250944\",\"bold\":\"1\"}],\"08\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201602250844\",\"bold\":\"1\"}]},\"26\":{\"09\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201602260944\",\"bold\":\"1\"}]}},\"March\":{\"25\":{\"09\":[{\"filename\":\"b.jpg\",\"datetaken\":\"201603250944\",\"bold\":\"1\"}]}}}}";
-        String jsonString = JSONfile.replaceAll("\\s+", "");
+        */
+        //String jsonString = JSONfile.replaceAll("\\s+", "");
+        String jsonString = JSONfile;
 
         //New JsonObject
         jO = new JSONObject();
