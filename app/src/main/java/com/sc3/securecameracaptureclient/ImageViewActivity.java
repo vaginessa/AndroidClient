@@ -13,7 +13,6 @@ import android.os.Handler;
 import android.util.Base64;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
