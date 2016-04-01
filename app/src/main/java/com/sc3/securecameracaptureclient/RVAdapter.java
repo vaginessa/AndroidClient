@@ -69,6 +69,7 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
                     Intent yearIntent = new Intent(c, ImageViewActivity.class);
                     yearIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     yearIntent.putExtra("picture", subTitle.getText().toString());
+                    yearIntent.putExtra("name", title.getText().toString());
                     c.startActivity(yearIntent);
                 }
             });

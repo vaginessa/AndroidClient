@@ -6,17 +6,25 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Base64;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -82,6 +90,7 @@ public class ImageViewActivity extends Activity {
     };
     private View mControlsView;
     private ImageViewTouch mImageView;
+    private String SaveImageName;
     private final Runnable mShowPart2Runnable = new Runnable() {
         @Override
         public void run() {
@@ -149,6 +158,7 @@ public class ImageViewActivity extends Activity {
 
         Intent intent = getIntent();
         String pictureName = intent.getStringExtra("picture");
+        SaveImageName = intent.getStringExtra("name");
 
         final ProgressDialog progressDialog = new ProgressDialog(ImageViewActivity.this,
                 R.style.AppTheme_Dark_Dialog);
@@ -201,6 +211,54 @@ public class ImageViewActivity extends Activity {
         // Schedule a runnable to display UI elements after a delay
         mHideHandler.removeCallbacks(mHidePart2Runnable);
         mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.image_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_download_image:
+
+                mImageView.buildDrawingCache();
+                Bitmap bm = mImageView.getDrawingCache();
+                saveImage(bm, SaveImageName);
+
+                return true;
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
+    }
+
+    private void saveImage(Bitmap bm, String name) {
+        OutputStream fOut = null;
+        //Uri outputFileUri;
+        try {
+            File root = new File(Environment.getExternalStorageDirectory()
+                    + File.separator + "SecureCameraCapture" + File.separator);
+            root.mkdirs();
+            File sdImageMainDirectory = new File(root, name + ".jpg");
+            //outputFileUri = Uri.fromFile(sdImageMainDirectory);
+            fOut = new FileOutputStream(sdImageMainDirectory);
+        } catch (Exception e) {
+            Toast.makeText(this, "Error occured. Please try again later.",
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        try {
+            bm.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+            fOut.flush();
+            fOut.close();
+        } catch (Exception e) {
+        }
     }
 
     /**
