@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Secure Camera Capture Client</string>
+    <string name="app_name">SC³</string>
 
     <!-- Strings related to login -->
     <string name="prompt_email">Username</string>
