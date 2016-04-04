@@ -1,2 +1,2 @@
 # AndroidClient
-https://api.travis-ci.org/SecureCameraCapture/AndroidClient.svg
+![alt tag](https://api.travis-ci.org/SecureCameraCapture/AndroidClient.svg)
