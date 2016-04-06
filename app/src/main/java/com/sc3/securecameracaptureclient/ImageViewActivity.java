@@ -1,18 +1,28 @@
 package com.sc3.securecameracaptureclient;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -160,6 +170,16 @@ public class ImageViewActivity extends Activity {
         String pictureName = intent.getStringExtra("picture");
         SaveImageName = intent.getStringExtra("name");
 
+        mImageView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                mImageView.buildDrawingCache();
+                Bitmap bm = mImageView.getDrawingCache();
+                saveImage(bm, SaveImageName);
+                return false;
+            }
+        });
+
         final ProgressDialog progressDialog = new ProgressDialog(ImageViewActivity.this,
                 R.style.AppTheme_Dark_Dialog);
         progressDialog.setIndeterminate(true);
@@ -213,40 +233,21 @@ public class ImageViewActivity extends Activity {
         mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY);
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.image_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.action_download_image:
-
-                mImageView.buildDrawingCache();
-                Bitmap bm = mImageView.getDrawingCache();
-                saveImage(bm, SaveImageName);
-
-                return true;
-            default:
-                // If we got here, the user's action was not recognized.
-                // Invoke the superclass to handle it.
-                return super.onOptionsItemSelected(item);
-
-        }
-    }
-
     private void saveImage(Bitmap bm, String name) {
         OutputStream fOut = null;
+        File root;
+        int REQUEST_STORAGE = 1;
+        File sdImageMainDirectory = null;
         //Uri outputFileUri;
         try {
-            File root = new File(Environment.getExternalStorageDirectory()
-                    + File.separator + "SecureCameraCapture" + File.separator);
+            if(ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        REQUEST_STORAGE);
+                return;
+            }
+            root = new File("/storage/emulated/0/Pictures/SecureCameraCapture/");
             root.mkdirs();
-            File sdImageMainDirectory = new File(root, name + ".jpg");
-            //outputFileUri = Uri.fromFile(sdImageMainDirectory);
+            sdImageMainDirectory = new File(root, name + ".jpg");
             fOut = new FileOutputStream(sdImageMainDirectory);
         } catch (Exception e) {
             Toast.makeText(this, "Error occured. Please try again later.",
@@ -254,12 +255,31 @@ public class ImageViewActivity extends Activity {
         }
 
         try {
-            bm.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+            bm.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
             fOut.flush();
             fOut.close();
+
+            //ContentResolver contentResolver = getContentResolver();
+            assert sdImageMainDirectory != null;
+
+            //startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("content:/" + sdImageMainDirectory.getAbsolutePath())));
+
+            /* Intent intent = new Intent();
+            intent.setAction(Intent.ACTION_VIEW);
+            intent.setDataAndType(Uri.parse("file://" + sdImageMainDirectory.getAbsolutePath()), "image/*");
+            startActivity(intent); */
+
+            //contentResolver.insert(saveMediaEntry(sdImageMainDirectory.getAbsolutePath(), name, name, System.currentTimeMillis(), 0));
+            //MediaStore.Images.Media.insertImage(getContentResolver(), sdImageMainDirectory.getAbsolutePath(), sdImageMainDirectory.getName(), sdImageMainDirectory.getName());
+
+            Toast.makeText(this, "Image Saved.",
+                    Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
+            Toast.makeText(this, "Error occured." + e.toString(),
+                    Toast.LENGTH_SHORT).show();
         }
     }
+
 
     /**
      * Schedules a call to hide() in [delay] milliseconds, canceling any

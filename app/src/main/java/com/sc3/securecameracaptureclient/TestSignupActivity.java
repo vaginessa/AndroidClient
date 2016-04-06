@@ -181,8 +181,8 @@ public class TestSignupActivity extends AppCompatActivity {
             _nameText.setError(null);
         }
 
-        if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            _emailText.setError("enter a valid email address");
+        if (email.isEmpty() ) {
+            _emailText.setError("enter a valid user name");
             valid = false;
         } else {
             _emailText.setError(null);
@@ -322,6 +322,19 @@ public class TestSignupActivity extends AppCompatActivity {
 
                 if (response.substring(0,1).equals("0")) {
                     response = new StringBuffer();
+
+                    urlConnection = (HttpsURLConnection) url.openConnection();
+
+                    urlConnection.setSSLSocketFactory(context.getSocketFactory());
+                    urlConnection.setHostnameVerifier(hostnameVerifier);
+
+                    urlConnection.setReadTimeout(10000);
+                    urlConnection.setConnectTimeout(15000);
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    urlConnection.setDoInput(true);
+                    urlConnection.setDoOutput(true);
+
                     os = urlConnection.getOutputStream();
 
                     os.write(myRegParameters.getBytes("UTF-8"));//getQuery(options));
@@ -345,6 +358,19 @@ public class TestSignupActivity extends AppCompatActivity {
 
                     if (response.substring(0,1).equals("0")) {
                         response = new StringBuffer();
+
+                        urlConnection = (HttpsURLConnection) url.openConnection();
+
+                        urlConnection.setSSLSocketFactory(context.getSocketFactory());
+                        urlConnection.setHostnameVerifier(hostnameVerifier);
+
+                        urlConnection.setReadTimeout(10000);
+                        urlConnection.setConnectTimeout(15000);
+                        urlConnection.setRequestMethod("POST");
+                        urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                        urlConnection.setDoInput(true);
+                        urlConnection.setDoOutput(true);
+
                         os = urlConnection.getOutputStream();
 
                         os.write(myLoginParameters.getBytes("UTF-8"));//getQuery(options));
