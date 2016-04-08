@@ -335,7 +335,7 @@ public class TestLoginActivity extends AppCompatActivity {
                 OutputStream os = urlConnection.getOutputStream();
 
                 String myParameters = "username=" + mEmail + "&password=" + mPassword;
-                os.write(myParameters.getBytes("UTF-8"));//getQuery(options));
+                os.write(myParameters.getBytes("UTF-8"));
                 os.flush();
                 os.close();
 

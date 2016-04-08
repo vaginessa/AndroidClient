@@ -68,7 +68,7 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
                 public void onClick(View v) {
                     Intent yearIntent = new Intent(c, ImageViewActivity.class);
                     yearIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    yearIntent.putExtra("picture", subTitle.getText().toString());
+                    yearIntent.putExtra("picture", title.getHint());
                     yearIntent.putExtra("name", title.getText().toString());
                     c.startActivity(yearIntent);
                 }
@@ -118,8 +118,9 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.CardViewHolder> {
                 .into(cardViewHolder.photo); */
 
         cardViewHolder.title.setText(cards.get(i).name);
+        cardViewHolder.title.setHint(cards.get(i).photoTitle);
         cardViewHolder.subTitle.setText(cards.get(i).age);
-        new UserLoginTask(cards.get(i).age, cardViewHolder).execute();
+        new UserLoginTask(cards.get(i).photoTitle, cardViewHolder).execute();
     }
 
     public int dp2px(int dp) {

@@ -43,6 +43,7 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Locale;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -77,6 +78,7 @@ public class ImageViewActivity extends Activity {
     private static final int UI_ANIMATION_DELAY = 300;
     private final Handler mHideHandler = new Handler();
     private View mContentView;
+    private Bitmap globalImage;
 
     public String GLOBALIPADDRESS = "";
     public boolean ipaddressSettingExits = false;
@@ -168,14 +170,13 @@ public class ImageViewActivity extends Activity {
 
         Intent intent = getIntent();
         String pictureName = intent.getStringExtra("picture");
-        SaveImageName = intent.getStringExtra("name");
+        SaveImageName = intent.getStringExtra("picture");
 
         mImageView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
                 mImageView.buildDrawingCache();
-                Bitmap bm = mImageView.getDrawingCache();
-                saveImage(bm, SaveImageName);
+                saveImage(globalImage, SaveImageName);
                 return false;
             }
         });
@@ -233,11 +234,22 @@ public class ImageViewActivity extends Activity {
         mHideHandler.postDelayed(mShowPart2Runnable, UI_ANIMATION_DELAY);
     }
 
+    public void onBackPressed(){
+        globalImage = null;
+        mImageView.setBackground(null);
+        //finishActivity(1);
+        System.gc();
+        finish();
+        onDestroy();
+    }
+
     private void saveImage(Bitmap bm, String name) {
         OutputStream fOut = null;
         File root;
         int REQUEST_STORAGE = 1;
         File sdImageMainDirectory = null;
+        Toast.makeText(this, "Saving Image...",
+                Toast.LENGTH_SHORT).show();
         //Uri outputFileUri;
         try {
             if(ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
@@ -259,18 +271,18 @@ public class ImageViewActivity extends Activity {
             fOut.flush();
             fOut.close();
 
-            //ContentResolver contentResolver = getContentResolver();
             assert sdImageMainDirectory != null;
 
-            //startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("content:/" + sdImageMainDirectory.getAbsolutePath())));
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.TITLE, name);
+            values.put(MediaStore.Images.Media.DESCRIPTION, name);
+            values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis ());
+            values.put(MediaStore.Images.ImageColumns.BUCKET_ID, sdImageMainDirectory.toString().toLowerCase(Locale.US).hashCode());
+            values.put(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME, sdImageMainDirectory.getName().toLowerCase(Locale.US));
+            values.put("_data", sdImageMainDirectory.getAbsolutePath());
 
-            /* Intent intent = new Intent();
-            intent.setAction(Intent.ACTION_VIEW);
-            intent.setDataAndType(Uri.parse("file://" + sdImageMainDirectory.getAbsolutePath()), "image/*");
-            startActivity(intent); */
-
-            //contentResolver.insert(saveMediaEntry(sdImageMainDirectory.getAbsolutePath(), name, name, System.currentTimeMillis(), 0));
-            //MediaStore.Images.Media.insertImage(getContentResolver(), sdImageMainDirectory.getAbsolutePath(), sdImageMainDirectory.getName(), sdImageMainDirectory.getName());
+            ContentResolver cr = getContentResolver();
+            cr.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
 
             Toast.makeText(this, "Image Saved.",
                     Toast.LENGTH_SHORT).show();
@@ -279,7 +291,6 @@ public class ImageViewActivity extends Activity {
                     Toast.LENGTH_SHORT).show();
         }
     }
-
 
     /**
      * Schedules a call to hide() in [delay] milliseconds, canceling any
@@ -292,6 +303,7 @@ public class ImageViewActivity extends Activity {
 
     private void onSuccess( String image ) {
         byte[] imageAsBytes = Base64.decode(image.getBytes(), Base64.DEFAULT);
+        globalImage = BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length);
         mImageView.setImageBitmap(
                 BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length), null, -1, -1);
     }
@@ -420,6 +432,7 @@ public class ImageViewActivity extends Activity {
             mProgressDialog.dismiss();
             if( success ){
                 onSuccess(response.toString());
+                response = null;
             } else {
                 onFailed();
             }
