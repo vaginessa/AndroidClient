@@ -33,7 +33,8 @@
             android:theme="@style/AppTheme.NoABar" />
         <activity
             android:name=".ImageViewActivity"
-            android:theme="@style/FullscreenTheme"/>
+            android:theme="@style/FullscreenTheme"
+            android:configChanges="orientation|keyboardHidden|screenSize" />
     </application>
 
 </manifest>
