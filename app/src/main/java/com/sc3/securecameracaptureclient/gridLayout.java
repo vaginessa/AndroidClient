@@ -1,11 +1,9 @@
 package com.sc3.securecameracaptureclient;
 
-import android.app.Activity;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +60,7 @@ public class gridLayout extends AppCompatActivity {
     }
 
     private void initializeAdapter(){
-        RVAdapter adapter = new RVAdapter(cards, this.getBaseContext());
+        ImageAdapter adapter = new ImageAdapter(cards, this.getBaseContext());
         rv.setAdapter(adapter);
     }
 

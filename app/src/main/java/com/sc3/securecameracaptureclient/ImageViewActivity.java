@@ -13,20 +13,13 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.location.Location;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
@@ -82,6 +75,7 @@ public class ImageViewActivity extends Activity {
 
     public String GLOBALIPADDRESS = "";
     public boolean ipaddressSettingExits = false;
+    public Context context;
 
     private final Runnable mHidePart2Runnable = new Runnable() {
         @SuppressLint("InlinedApi")
@@ -141,6 +135,7 @@ public class ImageViewActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_image_view);
+        context = getBaseContext();
 
         final SharedPreferences settings = getSharedPreferences("MySettingsFile", 0);
         String IPAddress = settings.getString("ipaddress", "");
@@ -313,16 +308,24 @@ public class ImageViewActivity extends Activity {
         onBackPressed();
     }
 
+    @Override
+    protected void onDestroy() {
+        new UserLogout().execute();
+        super.onDestroy();
+    }
 
     public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String mPicture;
         private final ProgressDialog mProgressDialog;
         StringBuffer response;
+        private String key;
 
         UserLoginTask(String picture, ProgressDialog progressDialog) {
             mPicture = picture;
             mProgressDialog = progressDialog;
+            final SharedPreferences settings = context.getSharedPreferences("MySettingsFile", 0);
+            key = settings.getString("key", "");
         }
 
         @Override
@@ -392,9 +395,10 @@ public class ImageViewActivity extends Activity {
 
                 OutputStream os = urlConnection.getOutputStream();
 
+                if(key.equals("")) { return false; }
 
-                String myParameters = "picture=" + mPicture  + "&type=0";
-                os.write(myParameters.getBytes("UTF-8"));//getQuery(options));
+                String myParameters = "picture=" + mPicture  + "&type=0" + "&key=" + key;
+                os.write(myParameters.getBytes("UTF-8"));
                 os.flush();
                 os.close();
 
@@ -443,4 +447,126 @@ public class ImageViewActivity extends Activity {
             onFailed();
         }
     }
+
+
+    public class UserLogout extends AsyncTask<Void, Void, Boolean> {
+        StringBuffer response;
+        private String key;
+
+        UserLogout( ) {
+            final SharedPreferences settings = context.getSharedPreferences("MySettingsFile", 0);
+            key = settings.getString("key", "");
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            // TODO: attempt authentication against a network service.
+            response = new StringBuffer();
+
+            try {
+                // Create a new HttpClient and Post Header
+
+                String URI = "https://" + GLOBALIPADDRESS + "/logout.php";
+
+                // Create an HostnameVerifier that hardwires the expected hostname.
+
+                HostnameVerifier hostnameVerifier = new HostnameVerifier() {
+                    @Override
+                    public boolean verify(String hostname, SSLSession session) {
+                        HostnameVerifier hv =
+                                HttpsURLConnection.getDefaultHostnameVerifier();
+                        return true;//hv.verify(GLOBALIPADDRESS, session);
+                    }
+                };
+
+                // Load CAs from an InputStream
+                // (could be from a resource or ByteArrayInputStream or ...)
+                CertificateFactory cf = CertificateFactory.getInstance("X.509");
+                // From https://www.washington.edu/itconnect/security/ca/load-der.crt
+
+                InputStream caInput = new BufferedInputStream(getBaseContext().getAssets().open("secure.crt"));
+                Certificate ca;
+                try {
+                    ca = cf.generateCertificate(caInput);
+                    System.out.println("ca=" + ((X509Certificate) ca).getSubjectDN());
+                } finally {
+                    caInput.close();
+                }
+
+                // Create a KeyStore containing our trusted CAs
+                String keyStoreType = KeyStore.getDefaultType();
+                KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+                keyStore.load(null, null);
+                keyStore.setCertificateEntry("ca", ca);
+
+                // Create a TrustManager that trusts the CAs in our KeyStore
+                String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
+                tmf.init(keyStore);
+
+                // Create an SSLContext that uses our TrustManager
+                SSLContext context = SSLContext.getInstance("TLS");
+                context.init(null, tmf.getTrustManagers(), null);
+
+
+                // Tell the URLConnection to use a SocketFactory from our SSLContext
+                URL url = new URL(URI);
+                HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+
+                urlConnection.setSSLSocketFactory(context.getSocketFactory());
+                urlConnection.setHostnameVerifier(hostnameVerifier);
+
+                urlConnection.setReadTimeout(10000);
+                urlConnection.setConnectTimeout(15000);
+                urlConnection.setRequestMethod("POST");
+                urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                urlConnection.setDoInput(true);
+                urlConnection.setDoOutput(true);
+
+                OutputStream os = urlConnection.getOutputStream();
+
+                if(key.equals("")) { return false; }
+
+                String myParameters = "key=" + key;
+                os.write(myParameters.getBytes("UTF-8"));
+                os.flush();
+                os.close();
+
+                int responseCode = urlConnection.getResponseCode();
+                System.out.println("\nSending 'POST' request to URL : " + url);
+                System.out.println("Post parameters : " + myParameters);
+                System.out.println("Response Code : " + responseCode);
+
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(urlConnection.getInputStream()));
+                String inputLine;
+
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                return response.substring(0,1).equals("0");
+
+            } catch (Exception e) {
+                System.out.println(e);
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            if( success ){
+                //onSuccess(response.toString());
+                response = null;
+            } else {
+                //onFailed();
+            }
+        }
+        @Override
+        protected void onCancelled() {
+            onFailed();
+        }
+    }
+
 }

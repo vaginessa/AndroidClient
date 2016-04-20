@@ -3,7 +3,6 @@ package com.sc3.securecameracaptureclient;
 /**
  * Created by Nathan on 3/28/2016.
  */
-
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -41,23 +40,23 @@ import javax.net.ssl.TrustManagerFactory;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 
-public class LoginActivity extends AppCompatActivity {
-    private static final String TAG = "LoginActivity";
-    private static final int REQUEST_SIGNUP = 0;
-    public String GLOBALIPADDRESS = "";
-    public boolean ipaddressSettingExits = false;
-    public String GlobalKey = "";
+public class SignupActivity extends AppCompatActivity {
+    private static final String TAG = "SignupActivity";
 
+    public String GLOBALIPADDRESS = "";
+    public String GlobalKey = "";
+    public boolean ipaddressSettingExits = false;
+
+    @InjectView(R.id.input_name) EditText _nameText;
     @InjectView(R.id.input_email) EditText _emailText;
     @InjectView(R.id.input_password) EditText _passwordText;
-    @InjectView(R.id.btn_login) Button _loginButton;
-    @InjectView(R.id.link_signup) TextView _signupLink;
-    @InjectView(R.id.link_ip_address) TextView _ipAddressLink;
+    @InjectView(R.id.btn_signup) Button _signupButton;
+    @InjectView(R.id.link_login) TextView _loginLink;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.test_login_activity);
+        setContentView(R.layout.test_signup_activity);
         ButterKnife.inject(this);
 
         final SharedPreferences settings = getSharedPreferences("MySettingsFile", 0);
@@ -67,12 +66,12 @@ public class LoginActivity extends AppCompatActivity {
 
         final Context c = this;
 
-        _loginButton.setOnClickListener(new View.OnClickListener() {
+        _signupButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
                 if(ipaddressSettingExits)
-                    login();
+                    signup();
                 else {
                     AlertDialog.Builder builder = new AlertDialog.Builder(c);
                     builder.setMessage("IP Address of Server not Set.")
@@ -125,101 +124,84 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        _signupLink.setOnClickListener(new View.OnClickListener() {
-
+        _loginLink.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Start the Signup activity
-                Intent intent = new Intent(getApplicationContext(), SignupActivity.class);
-                startActivityForResult(intent, REQUEST_SIGNUP);
-            }
-        });
-
-        _ipAddressLink.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(c);
-                // Get the layout inflater
-                LayoutInflater inflater = (LayoutInflater) c.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-
-                // Inflate and set the layout for the dialog
-                // Pass null as the parent view because its going in the dialog layout
-                final View v_iew = inflater.inflate(R.layout.ip_address, null);
-                builder.setView(v_iew)
-                        //.setTitle("IP Address Of the Server")
-                        // Add action buttons
-                        .setPositiveButton(R.string.set, new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int id) {
-                                //Save the ip Address
-                                EditText _ipaddress = (EditText) v_iew.findViewById(R.id.ipaddress_editText);
-                                SharedPreferences.Editor e = settings.edit();
-                                //Probably should valdate these settings first
-                                //TODO validate
-                                if (_ipaddress.getText() != null && !_ipaddress.getText().toString().equals("")) {
-                                    e.putString("ipaddress", _ipaddress.getText().toString());
-                                    e.apply();
-                                    ipaddressSettingExits = true;
-                                } else {
-                                    _ipaddress.setError("Please enter valid IP Address");
-                                }
-                            }
-                        })
-                        .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                dialog.cancel();
-                            }
-                        });
-                builder.show();
+                // Finish the registration screen and return to the Login activity
+                finish();
             }
         });
     }
 
-    public void login() {
-        Log.d(TAG, "Login");
+    public void signup() {
+        Log.d(TAG, "Signup");
 
         if (!validate()) {
-            onLoginFailed();
+            onSignupFailed();
             return;
         }
 
-        _loginButton.setEnabled(false);
+        _signupButton.setEnabled(false);
 
-        final ProgressDialog progressDialog = new ProgressDialog(LoginActivity.this,
+        final ProgressDialog progressDialog = new ProgressDialog(SignupActivity.this,
                 R.style.AppTheme_Dark_Dialog);
         progressDialog.setIndeterminate(true);
-        progressDialog.setMessage("Authenticating...");
+        progressDialog.setMessage("Creating Account...");
         progressDialog.show();
 
+        String number = _nameText.getText().toString();
         String email = _emailText.getText().toString();
         String password = _passwordText.getText().toString();
 
-        new UserLoginTask(email, password, progressDialog).execute();
+        (new UserRegisterTask(email, password, number, progressDialog)).execute();
     }
 
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_SIGNUP) {
-            if (resultCode == RESULT_OK) {
+    public void onSignupSuccess() {
+        _signupButton.setEnabled(true);
+        setResult(RESULT_OK, null);
+        finish();
+    }
 
-                // TODO: Implement successful signup logic here
-                // By default we just finish the Activity and log them in automatically
-                this.finish();
-            }
+    public void onSignupFailed() {
+        Toast.makeText(getBaseContext(), "Login failed", Toast.LENGTH_LONG).show();
+        _signupButton.setEnabled(true);
+    }
+
+    public boolean validate() {
+        boolean valid = true;
+
+        String name = _nameText.getText().toString();
+        String email = _emailText.getText().toString();
+        String password = _passwordText.getText().toString();
+
+        if (name.isEmpty() || name.length() < 3) {
+            _nameText.setError("at least 3 characters");
+            valid = false;
+        } else {
+            _nameText.setError(null);
         }
+
+        if (email.isEmpty() ) {
+            _emailText.setError("enter a valid user name");
+            valid = false;
+        } else {
+            _emailText.setError(null);
+        }
+
+        if (password.isEmpty() || password.length() < 4 || password.length() > 10) {
+            _passwordText.setError("between 4 and 10 alphanumeric characters");
+            valid = false;
+        } else {
+            _passwordText.setError(null);
+        }
+
+        return valid;
     }
 
-    @Override
-    public void onBackPressed() {
-        // disable going back to the MainActivity
-        moveTaskToBack(true);
-    }
-
-    public void onLoginSuccess(String JSON) {
+    public void onRegisterSuccess(String JSON) {
         //progressDialog.dismiss();
-        _loginButton.setEnabled(true);
-
+        //_loginButton.setEnabled(true);
         final SharedPreferences settings = getSharedPreferences("MySettingsFile", 0);
         SharedPreferences.Editor e = settings.edit();
         e.putString("key", GlobalKey);
@@ -232,45 +214,24 @@ public class LoginActivity extends AppCompatActivity {
         finish();
     }
 
-    public void onLoginFailed() {
+    public void onRegisterFailed() {
         //progressDialog.dismiss();
-        Toast.makeText(getBaseContext(), "Login failed", Toast.LENGTH_LONG).show();
-        _loginButton.setEnabled(true);
+        Toast.makeText(getBaseContext(), "Unable to Create Account", Toast.LENGTH_LONG).show();
+        //_loginButton.setEnabled(true);
     }
 
-    public boolean validate() {
-        boolean valid = true;
-
-        String email = _emailText.getText().toString();
-        String password = _passwordText.getText().toString();
-
-        if (email.isEmpty() || email.length() < 4 || email.length() > 20) { //|| !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            _emailText.setError("enter a valid username");
-            valid = false;
-        } else {
-            _emailText.setError(null);
-        }
-
-        if (password.isEmpty() || password.length() < 4 || password.length() > 20) {
-            _passwordText.setError("between 4 and 20 alphanumeric characters");
-            valid = false;
-        } else {
-            _passwordText.setError(null);
-        }
-
-        return valid;
-    }
-
-    public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
+    public class UserRegisterTask extends AsyncTask<Void, Void, Boolean> {
 
         private final String mEmail;
         private final String mPassword;
+        private final String mNumber;
         private final ProgressDialog mProgressDialog;
         StringBuffer response;
 
-        UserLoginTask(String email, String password, ProgressDialog progressDialog) {
+        UserRegisterTask(String email, String password, String number, ProgressDialog progressDialog) {
             mEmail = email;
             mPassword = password;
+            mNumber = number;
             mProgressDialog = progressDialog;
         }
 
@@ -341,14 +302,16 @@ public class LoginActivity extends AppCompatActivity {
 
                 OutputStream os = urlConnection.getOutputStream();
 
-                String myParameters = "username=" + mEmail + "&password=" + mPassword;
-                os.write(myParameters.getBytes("UTF-8"));
+                String myLoginParameters = "username=" + mEmail + "&password=" + mPassword;
+                String myRegParameters = "username=" + mEmail + "&password=" + mPassword + "&number=" + mNumber;
+                String myInitialParameters = "username=" + "user" + "&password=" + "password" + "&number=" + mNumber;
+                os.write(myInitialParameters.getBytes("UTF-8"));//getQuery(options));
                 os.flush();
                 os.close();
 
                 int responseCode = urlConnection.getResponseCode();
                 System.out.println("\nSending 'POST' request to URL : " + url);
-                System.out.println("Post parameters : " + myParameters);
+                System.out.println("Post parameters : " + myInitialParameters);
                 System.out.println("Response Code : " + responseCode);
 
                 BufferedReader in = new BufferedReader(
@@ -361,11 +324,91 @@ public class LoginActivity extends AppCompatActivity {
                 }
                 in.close();
 
-                System.out.println(response);
+                //System.out.println(response);
 
                 if (response.substring(0,1).equals("0")) {
-                    GlobalKey = response.substring(1, 31);
-                    return true;
+                    response = new StringBuffer();
+
+                    urlConnection = (HttpsURLConnection) url.openConnection();
+
+                    urlConnection.setSSLSocketFactory(context.getSocketFactory());
+                    urlConnection.setHostnameVerifier(hostnameVerifier);
+
+                    urlConnection.setReadTimeout(10000);
+                    urlConnection.setConnectTimeout(15000);
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    urlConnection.setDoInput(true);
+                    urlConnection.setDoOutput(true);
+
+                    os = urlConnection.getOutputStream();
+
+                    os.write(myRegParameters.getBytes("UTF-8"));//getQuery(options));
+                    os.flush();
+                    os.close();
+
+                    responseCode = urlConnection.getResponseCode();
+                    System.out.println("\nSending 'POST' request to URL : " + url);
+                    System.out.println("Post parameters : " + myRegParameters);
+                    System.out.println("Response Code : " + responseCode);
+
+                    in = new BufferedReader(
+                            new InputStreamReader(urlConnection.getInputStream()));
+                    //StringBuffer response = new StringBuffer();
+                    inputLine = "";
+
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    in.close();
+
+                    if (response.substring(0,1).equals("0")) {
+                        response = new StringBuffer();
+
+                        urlConnection = (HttpsURLConnection) url.openConnection();
+
+                        urlConnection.setSSLSocketFactory(context.getSocketFactory());
+                        urlConnection.setHostnameVerifier(hostnameVerifier);
+
+                        urlConnection.setReadTimeout(10000);
+                        urlConnection.setConnectTimeout(15000);
+                        urlConnection.setRequestMethod("POST");
+                        urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                        urlConnection.setDoInput(true);
+                        urlConnection.setDoOutput(true);
+
+                        os = urlConnection.getOutputStream();
+
+                        os.write(myLoginParameters.getBytes("UTF-8"));//getQuery(options));
+                        os.flush();
+                        os.close();
+
+                        responseCode = urlConnection.getResponseCode();
+                        System.out.println("\nSending 'POST' request to URL : " + url);
+                        System.out.println("Post parameters : " + myLoginParameters);
+                        System.out.println("Response Code : " + responseCode);
+
+                        in = new BufferedReader(
+                                new InputStreamReader(urlConnection.getInputStream()));
+                        //StringBuffer response = new StringBuffer();
+                        inputLine = "";
+
+                        while ((inputLine = in.readLine()) != null) {
+                            response.append(inputLine);
+                        }
+                        in.close();
+
+                        if (response.substring(0,1).equals("0")) {
+                            GlobalKey = response.substring(1, 31);
+                            return true;
+                        } else {
+                            return false;
+                        }
+
+                    } else {
+                        return false;
+                    }
+
                 }
                 else {
                     return false;
@@ -381,16 +424,16 @@ public class LoginActivity extends AppCompatActivity {
         protected void onPostExecute(final Boolean success) {
             mProgressDialog.dismiss();
             if( success ){
-                onLoginSuccess(response.substring(31));
+                onRegisterSuccess(response.substring(31));
             } else {
-                onLoginFailed();
+                onRegisterFailed();
             }
 
         }
 
         @Override
         protected void onCancelled() {
-            onLoginFailed();
+            onRegisterFailed();
         }
     }
 }

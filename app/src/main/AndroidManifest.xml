@@ -13,7 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme" >
         <activity
-            android:name=".TestLoginActivity"
+            android:name=".LoginActivity"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoABar">
             <intent-filter>
@@ -27,9 +27,8 @@
         <activity android:name=".DayViewActivity" />
         <activity android:name=".HourViewActivity" />
         <activity android:name=".gridLayout" />
-        <activity android:name=".MainTest" />
         <activity
-            android:name=".TestSignupActivity"
+            android:name=".SignupActivity"
             android:theme="@style/AppTheme.NoABar" />
         <activity
             android:name=".ImageViewActivity"
