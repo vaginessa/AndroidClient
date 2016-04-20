@@ -84,7 +84,7 @@ public class HourViewActivity extends AppCompatActivity {
     }
 
     protected void onDestroy() {
-        new UserLogout().execute();
+        //new UserLogout().execute();
         super.onDestroy();
     }
 

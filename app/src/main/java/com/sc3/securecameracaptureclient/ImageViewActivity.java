@@ -297,10 +297,14 @@ public class ImageViewActivity extends Activity {
     }
 
     private void onSuccess( String image ) {
-        byte[] imageAsBytes = Base64.decode(image.getBytes(), Base64.DEFAULT);
-        globalImage = BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length);
-        mImageView.setImageBitmap(
-                BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length), null, -1, -1);
+        try {
+            byte[] imageAsBytes = Base64.decode(image.getBytes(), Base64.DEFAULT);
+            globalImage = BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length);
+            mImageView.setImageBitmap(
+                    BitmapFactory.decodeByteArray(imageAsBytes, 0, imageAsBytes.length), null, -1, -1);
+        } catch (Exception e) {
+            onFailed();
+        }
     }
 
     private void onFailed( ) {
@@ -310,7 +314,7 @@ public class ImageViewActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        new UserLogout().execute();
+        //new UserLogout().execute();
         super.onDestroy();
     }
 

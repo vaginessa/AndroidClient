@@ -1,7 +1,10 @@
 package com.sc3.securecameracaptureclient;
 
+import android.app.IntentService;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -70,130 +73,18 @@ public class YearViewActivity extends AppCompatActivity {
         rv.setAdapter(adapter);
     }
 
+
     @Override
-    protected void onDestroy() {
-        new UserLogout().execute();
+    protected void onDestroy( ) {
+        final SharedPreferences settings = context.getSharedPreferences("MySettingsFile", 0);
+        String key = settings.getString("key", "");
+        String ip = settings.getString("ipaddress", "");
+
+        Intent mServiceIntent = new Intent(context, LogOutService.class);
+        mServiceIntent.putExtra("key", key);
+        mServiceIntent.putExtra("ip", ip);
+        // Starts the IntentService
+        context.startService(mServiceIntent);
         super.onDestroy();
-    }
-
-    public class UserLogout extends AsyncTask<Void, Void, Boolean> {
-        StringBuffer response;
-        private String key;
-        private String ip;
-
-        UserLogout( ) {
-            final SharedPreferences settings = context.getSharedPreferences("MySettingsFile", 0);
-            key = settings.getString("key", "");
-            ip = settings.getString("ipaddress", "");
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            // TODO: attempt authentication against a network service.
-            response = new StringBuffer();
-
-            try {
-                // Create a new HttpClient and Post Header
-
-                String URI = "https://" + ip + "/logout.php";
-
-                // Create an HostnameVerifier that hardwires the expected hostname.
-
-                HostnameVerifier hostnameVerifier = new HostnameVerifier() {
-                    @Override
-                    public boolean verify(String hostname, SSLSession session) {
-                        HostnameVerifier hv =
-                                HttpsURLConnection.getDefaultHostnameVerifier();
-                        return true;//hv.verify(GLOBALIPADDRESS, session);
-                    }
-                };
-
-                // Load CAs from an InputStream
-                // (could be from a resource or ByteArrayInputStream or ...)
-                CertificateFactory cf = CertificateFactory.getInstance("X.509");
-                // From https://www.washington.edu/itconnect/security/ca/load-der.crt
-
-                InputStream caInput = new BufferedInputStream(getBaseContext().getAssets().open("secure.crt"));
-                Certificate ca;
-                try {
-                    ca = cf.generateCertificate(caInput);
-                    System.out.println("ca=" + ((X509Certificate) ca).getSubjectDN());
-                } finally {
-                    caInput.close();
-                }
-
-                // Create a KeyStore containing our trusted CAs
-                String keyStoreType = KeyStore.getDefaultType();
-                KeyStore keyStore = KeyStore.getInstance(keyStoreType);
-                keyStore.load(null, null);
-                keyStore.setCertificateEntry("ca", ca);
-
-                // Create a TrustManager that trusts the CAs in our KeyStore
-                String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
-                TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
-                tmf.init(keyStore);
-
-                // Create an SSLContext that uses our TrustManager
-                SSLContext context = SSLContext.getInstance("TLS");
-                context.init(null, tmf.getTrustManagers(), null);
-
-
-                // Tell the URLConnection to use a SocketFactory from our SSLContext
-                URL url = new URL(URI);
-                HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
-
-                urlConnection.setSSLSocketFactory(context.getSocketFactory());
-                urlConnection.setHostnameVerifier(hostnameVerifier);
-
-                urlConnection.setReadTimeout(10000);
-                urlConnection.setConnectTimeout(15000);
-                urlConnection.setRequestMethod("POST");
-                urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-                urlConnection.setDoInput(true);
-                urlConnection.setDoOutput(true);
-
-                OutputStream os = urlConnection.getOutputStream();
-
-                if(key.equals("")) { return false; }
-
-                String myParameters = "key=" + key;
-                os.write(myParameters.getBytes("UTF-8"));
-                os.flush();
-                os.close();
-
-                int responseCode = urlConnection.getResponseCode();
-                System.out.println("\nSending 'POST' request to URL : " + url);
-                System.out.println("Post parameters : " + myParameters);
-                System.out.println("Response Code : " + responseCode);
-
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(urlConnection.getInputStream()));
-                String inputLine;
-
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
-                }
-                in.close();
-
-                return response.substring(0,1).equals("0");
-
-            } catch (Exception e) {
-                System.out.println(e);
-                return false;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(final Boolean success) {
-            if( success ){
-                //onSuccess(response.toString());
-                response = null;
-            } else {
-                //onFailed();
-            }
-        }
-        @Override
-        protected void onCancelled() {
-        }
     }
 }

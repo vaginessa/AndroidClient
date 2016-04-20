@@ -34,6 +34,9 @@
             android:name=".ImageViewActivity"
             android:theme="@style/FullscreenTheme"
             android:configChanges="orientation|keyboardHidden|screenSize" />
+        <service
+            android:name=".LogOutService"
+            android:exported="false"/>
     </application>
 
 </manifest>

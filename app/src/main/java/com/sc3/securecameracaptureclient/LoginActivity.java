@@ -47,6 +47,9 @@ public class LoginActivity extends AppCompatActivity {
     public String GLOBALIPADDRESS = "";
     public boolean ipaddressSettingExits = false;
     public String GlobalKey = "";
+    public boolean tryLogout = true;
+    private String _email, _password;
+    private ProgressDialog _progressDialog;
 
     @InjectView(R.id.input_email) EditText _emailText;
     @InjectView(R.id.input_password) EditText _passwordText;
@@ -101,6 +104,7 @@ public class LoginActivity extends AppCompatActivity {
                                                         e.putString("ipaddress", _ipaddress.getText().toString());
                                                         e.apply();
                                                         ipaddressSettingExits = true;
+                                                        GLOBALIPADDRESS = _ipaddress.getText().toString();
                                                     } else {
                                                         _ipaddress.setError("Please enter valid IP Address");
                                                     }
@@ -160,6 +164,7 @@ public class LoginActivity extends AppCompatActivity {
                                     e.putString("ipaddress", _ipaddress.getText().toString());
                                     e.apply();
                                     ipaddressSettingExits = true;
+                                    GLOBALIPADDRESS = _ipaddress.getText().toString();
                                 } else {
                                     _ipaddress.setError("Please enter valid IP Address");
                                 }
@@ -191,10 +196,11 @@ public class LoginActivity extends AppCompatActivity {
         progressDialog.setMessage("Authenticating...");
         progressDialog.show();
 
-        String email = _emailText.getText().toString();
-        String password = _passwordText.getText().toString();
+        _email = _emailText.getText().toString();
+        _password = _passwordText.getText().toString();
+        _progressDialog = progressDialog;
 
-        new UserLoginTask(email, password, progressDialog).execute();
+        new UserLoginTask(_email, _password, progressDialog).execute();
     }
 
 
@@ -234,6 +240,14 @@ public class LoginActivity extends AppCompatActivity {
 
     public void onLoginFailed() {
         //progressDialog.dismiss();
+        if(tryLogout) {
+            final SharedPreferences settings = getBaseContext().getSharedPreferences("MySettingsFile", 0);
+            String key = settings.getString("key", "");
+            String ip = settings.getString("ipaddress", "");
+            new LogoutTask(ip, key).execute();
+            tryLogout = false;
+            return;
+        }
         Toast.makeText(getBaseContext(), "Login failed", Toast.LENGTH_LONG).show();
         _loginButton.setEnabled(true);
     }
@@ -259,6 +273,111 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         return valid;
+    }
+
+    public class LogoutTask extends AsyncTask<Void, Void, Boolean> {
+
+        StringBuffer response;
+        String key;
+        String ip;
+
+        LogoutTask(String ip, String key ) {
+            this.key = key;
+            this.ip = ip;
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            // TODO: attempt authentication against a network service.
+            response = new StringBuffer();
+            try {
+                String URI = "https://" + ip + "/logout.php";
+
+                HostnameVerifier hostnameVerifier = new HostnameVerifier() {
+                    @Override
+                    public boolean verify(String hostname, SSLSession session) {
+                        HostnameVerifier hv =
+                                HttpsURLConnection.getDefaultHostnameVerifier();
+                        return true;
+                    }
+                };
+
+                CertificateFactory cf = CertificateFactory.getInstance("X.509");
+
+                InputStream caInput = new BufferedInputStream(getBaseContext().getAssets().open("secure.crt"));
+                Certificate ca;
+                try {
+                    ca = cf.generateCertificate(caInput);
+                    System.out.println("ca=" + ((X509Certificate) ca).getSubjectDN());
+                } finally {
+                    caInput.close();
+                }
+
+                String keyStoreType = KeyStore.getDefaultType();
+                KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+                keyStore.load(null, null);
+                keyStore.setCertificateEntry("ca", ca);
+
+                String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
+                tmf.init(keyStore);
+
+                SSLContext context = SSLContext.getInstance("TLS");
+                context.init(null, tmf.getTrustManagers(), null);
+
+                URL url = new URL(URI);
+                HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+
+                urlConnection.setSSLSocketFactory(context.getSocketFactory());
+                urlConnection.setHostnameVerifier(hostnameVerifier);
+
+                urlConnection.setReadTimeout(10000);
+                urlConnection.setConnectTimeout(15000);
+                urlConnection.setRequestMethod("POST");
+                urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                urlConnection.setDoInput(true);
+                urlConnection.setDoOutput(true);
+
+                OutputStream os = urlConnection.getOutputStream();
+
+                if(key.equals("")) { return false; }
+
+                String myParameters = "key=" + key;
+                os.write(myParameters.getBytes("UTF-8"));
+                os.flush();
+                os.close();
+
+                int responseCode = urlConnection.getResponseCode();
+                System.out.println("\nSending 'POST' request to URL : " + url);
+                System.out.println("Post parameters : " + myParameters);
+                System.out.println("Response Code : " + responseCode);
+
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(urlConnection.getInputStream()));
+                String inputLine;
+
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                return response.substring(0,1).equals("0");
+
+            } catch (Exception e) {
+                System.out.println(e);
+                return false;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            new UserLoginTask(_email, _password, _progressDialog).execute();
+        }
+
+        @Override
+        protected void onCancelled() {
+
+        }
     }
 
     public class UserLoginTask extends AsyncTask<Void, Void, Boolean> {
@@ -364,7 +483,7 @@ public class LoginActivity extends AppCompatActivity {
                 System.out.println(response);
 
                 if (response.substring(0,1).equals("0")) {
-                    GlobalKey = response.substring(1, 31);
+                    GlobalKey = response.substring(1, 31).split(",")[0];
                     return true;
                 }
                 else {
@@ -381,7 +500,7 @@ public class LoginActivity extends AppCompatActivity {
         protected void onPostExecute(final Boolean success) {
             mProgressDialog.dismiss();
             if( success ){
-                onLoginSuccess(response.substring(31));
+                onLoginSuccess(response.substring(GlobalKey.length()+2));
             } else {
                 onLoginFailed();
             }
